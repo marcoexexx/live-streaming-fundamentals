@@ -9,9 +9,30 @@ const Stream = () => {
   const mediaRecorderRef = useRef<any>(null);
   const recordedChunks = useRef<any>([]);
 
+  const [savedVideo, setSavedVideo] = useState<string | undefined>(undefined)
+
   // Start the video stream
   const startStream = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    videoRef.current.srcObject = stream;
+    videoRef.current.play();
+
+    // Emit video data via Socket.IO
+    mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+    mediaRecorderRef.current.ondataavailable = (event: any) => {
+      if (event.data.size > 0) {
+        recordedChunks.current.push(event.data);
+        socket.emit('stream-data', event.data);
+      }
+    };
+
+    mediaRecorderRef.current.start(200); // Send chunks every 200ms
+    setStreaming(true);
+  };
+
+  const startScreenStream = async () => {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
     videoRef.current.srcObject = stream;
     videoRef.current.play();
 
@@ -45,10 +66,14 @@ const Stream = () => {
     const formData = new FormData();
     formData.append('video', blob, 'recorded-video.webm');
 
-    await fetch('http://localhost:3000/save-video', {
-      method: 'POST',
-      body: formData
-    });
+    // await fetch('http://localhost:3000/save-video', {
+    //   method: 'POST',
+    //   body: formData
+    // });
+
+    const url = URL.createObjectURL(blob)
+
+    setSavedVideo(url)
 
     recordedChunks.current = [];
   };
@@ -58,12 +83,17 @@ const Stream = () => {
       <video ref={videoRef} style={{ width: '600px', height: '400px' }} />
       <div>
         {!streaming ? (
+          <>
+          <button onClick={startScreenStream}>Start Screen Streaming</button>
           <button onClick={startStream}>Start Streaming</button>
+          </>
         ) : (
           <button onClick={stopStream}>Stop Streaming</button>
         )}
         <button onClick={saveVideo}>Save Video</button>
       </div>
+
+      {savedVideo ? savedVideo : null}
     </div>
   );
 };

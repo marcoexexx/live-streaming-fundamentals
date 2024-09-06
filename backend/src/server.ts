@@ -1,8 +1,8 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import multer from 'multer';
-import path from 'path';
+import multer from 'multer'; 
+import path from 'path'; 
 import cors from 'cors'
 
 const app = express();
@@ -44,7 +44,6 @@ io.on('connection', (socket) => {
 
   socket.on('stop-stream', () => {
     console.log('Stream stopped');
-    socket.broadcast.emit('stop');
   });
 
   socket.on('disconnect', () => {
