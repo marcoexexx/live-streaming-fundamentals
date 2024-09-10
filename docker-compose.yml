@@ -1,0 +1,43 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: live-streaming-backend
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+      - /app/backend/node_modules
+      - /app/backend/dist
+    networks:
+        - live-streaming-network
+    command: >
+      bash -c "
+      cd backend;
+      pnpm install;
+      pnpm run start:dev;"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: live-streaming-frontend
+    ports:
+      - 5173:5173
+    networks:
+        - live-streaming-network
+    volumes:
+      - .:/app
+      - /app/frontend/node_modules
+      - /app/frontend/dist
+    command: >
+      bash -c "
+      cd frontend;
+      pnpm install;
+      pnpm run dev;"
+
+networks:
+  live-streaming-network:
+    driver: bridge

@@ -19,14 +19,9 @@ export function Player() {
         sourceBufferRef.current = sourceBuffer;
 
         sourceBuffer.addEventListener('updateend', () => {
-          console.log('SourceBuffer update ended');
           if (videoElement.readyState >= 3) {
             videoElement.play().catch(console.error);
           }
-        });
-
-        sourceBuffer.addEventListener('error', (e) => {
-          console.error('SourceBuffer Error:', e);
         });
       });
 
@@ -36,24 +31,13 @@ export function Player() {
     setupMediaSource();
     
     return () => {
-      if (videoRef.current) {
-        URL.revokeObjectURL(videoRef.current.src);
-      }
+      if (videoRef.current) URL.revokeObjectURL(videoRef.current.src);
     };
   }, []);
 
   useEffect(() => {
     function handleOnStreamEvent(arrayBuffer: ArrayBuffer) {
-      if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
-        try {
-          sourceBufferRef.current.appendBuffer(arrayBuffer);
-          console.log('Buffer appended');
-        } catch (error) {
-          console.error('Error appending buffer:', error);
-        }
-      } else {
-        console.log('SourceBuffer is updating, waiting for update to finish.');
-      }
+      if (sourceBufferRef.current && !sourceBufferRef.current.updating) sourceBufferRef.current.appendBuffer(arrayBuffer);
     }
 
     socket.on("stream", handleOnStreamEvent);
