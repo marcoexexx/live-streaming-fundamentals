@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react';
-import io from 'socket.io-client';
-
-const socket = io('http://localhost:3000');
+import { socket } from './socket';
 
 const Stream = () => {
   const videoRef = useRef<any>(null);
@@ -66,10 +64,11 @@ const Stream = () => {
     const formData = new FormData();
     formData.append('video', blob, 'recorded-video.webm');
 
-    // await fetch('http://localhost:3000/save-video', {
-    //   method: 'POST',
-    //   body: formData
-    // });
+    // Save video
+    await fetch('http://localhost:3000/save-video', {
+      method: 'POST',
+      body: formData
+    });
 
     const url = URL.createObjectURL(blob)
 
