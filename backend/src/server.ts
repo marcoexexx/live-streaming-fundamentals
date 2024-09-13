@@ -5,6 +5,8 @@ import multer from 'multer';
 import path from 'path'; 
 import cors from 'cors'
 
+const BUFFER: Record<string, ArrayBuffer[]> = {}
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -38,8 +40,15 @@ const upload = multer({ storage });
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  socket.on('stream-data', (data) => {
-    socket.broadcast.emit('stream', data); // Send stream to other clients
+  socket.on('stream:join', (roomId) => {
+    socket.join(roomId)
+  });
+
+  socket.on('stream-data', (roomId, data: ArrayBuffer) => {
+    let key = `${roomId}-${socket.id}`
+    BUFFER[key] ??= []
+    BUFFER[key].push(data)
+    socket.broadcast.to(roomId).emit('stream', data, BUFFER[key]); // Send stream to other clients
   });
 
   socket.on('stop-stream', () => {

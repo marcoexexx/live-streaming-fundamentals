@@ -2,12 +2,14 @@ import { useRef, useState } from 'react';
 import { socket } from './socket';
 
 const Stream = () => {
-  const videoRef = useRef<any>(null);
-  const [streaming, setStreaming] = useState(false);
-  const mediaRecorderRef = useRef<any>(null);
-  const recordedChunks = useRef<any>([]);
-
   const [savedVideo, setSavedVideo] = useState<string | undefined>(undefined)
+  const [streaming, setStreaming] = useState(false);
+  const [roomId, setRoomId] = useState<string | undefined>(undefined)
+
+  const videoRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<any>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const recordedChunks = useRef<any>([]);
 
   // Start the video stream
   const startStream = async () => {
@@ -40,7 +42,7 @@ const Stream = () => {
     mediaRecorderRef.current.ondataavailable = (event: any) => {
       if (event.data.size > 0) {
         recordedChunks.current.push(event.data);
-        socket.emit('stream-data', event.data);
+        if (roomId) socket.emit('stream-data', roomId, event.data);
       }
     };
 
@@ -77,8 +79,26 @@ const Stream = () => {
     recordedChunks.current = [];
   };
 
+  function handleOnJoin() {
+    if (inputRef.current && inputRef.current.value) {
+      setRoomId(inputRef.current.value)
+      socket.emit("stream:join", inputRef.current.value)
+    }
+  }
+
   return (
     <div>
+
+      {roomId ? `Connected to ${roomId}` : null}
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "start",
+      }}>
+        <input type='text' ref={inputRef} />
+        <button onClick={handleOnJoin}>Join</button>
+      </div>
+
       <video ref={videoRef} style={{ width: '600px', height: '400px' }} />
       <div>
         {!streaming ? (
