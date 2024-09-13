@@ -1,12 +1,25 @@
 import { useEffect, useRef } from "react";
 import { socket } from "./socket";
 
+
+/// Utils function
+function concatArrayBuffer(buffers: ArrayBuffer[]): ArrayBuffer {
+  const totalLen = buffers.reduce((acc, buffer) => acc + buffer.byteLength, 0);
+  const tempArray = new Uint8Array(totalLen);
+  let offset = 0
+  buffers.forEach(buffer => {
+    tempArray.set(new Uint8Array(buffer), offset)
+    offset += buffer.byteLength
+  });
+  return tempArray.buffer
+}
+
+
 export function Player() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaSourceRef = useRef<MediaSource | null>(null);
   const sourceBufferRef = useRef<SourceBuffer | null>(null);
   const hasInitialData = useRef(false); // To track if we have initial stream data
-  const isViewRef = useRef(false);
 
   useEffect(() => {
     function setupMediaSource() {
@@ -39,34 +52,18 @@ export function Player() {
   }, []);
 
   useEffect(() => {
-    function handleOnStreamEvent(arrayBuffer: ArrayBuffer, buffers: ArrayBuffer[]) {
+    function handleOnStreamEvent(_arrayBuffer: ArrayBuffer, buffers: ArrayBuffer[]) {
       if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
-        if ((mediaSourceRef.current?.sourceBuffers?.length || 0) > 0) {
-
-          if (videoRef.current) {
-            if (isViewRef.current) {
-              sourceBufferRef.current.appendBuffer(arrayBuffer);
-              hasInitialData.current = true; // Mark that data has been received
-            } else {
-              buffers.forEach(buf => {
-                if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
-                  sourceBufferRef.current.appendBuffer(buf);
-                }
-              })
-              hasInitialData.current = true; // Mark that data has been received
-              isViewRef.current = true
-              console.log(URL.createObjectURL((new Blob(buffers, {type: "video/webm"}))))
-            }
-          };
-
-        }
+        // sourceBufferRef.current.appendBuffer(arrayBuffer);
+        sourceBufferRef.current.appendBuffer(concatArrayBuffer(buffers));
+        hasInitialData.current = true; // Mark that data has been received
       }
     }
 
     socket.on("stream", handleOnStreamEvent);
 
     return () => {
-      socket.off("stream", handleOnStreamEvent);
+      // socket.off("stream", handleOnStreamEvent);
     };
   }, []);
 
